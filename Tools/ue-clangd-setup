@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""Configura un progetto Unreal per usare clangd al posto di IntelliSense (cpptools).
+
+Uso: ue-clangd-setup [cartella_progetto]   (default: cartella corrente)
+
+Rilanciarlo dopo ogni "Refresh Visual Studio Code Project" / GenerateProjectFiles,
+perche' UE rigenera il .code-workspace sovrascrivendo le impostazioni.
+"""
+import json
+import sys
+from pathlib import Path
+
+CLANGD_EXT = "llvm-vs-code-extensions.vscode-clangd"
+
+WORKSPACE_SETTINGS = {
+    # cpptools resta installato solo per il debugger (cppdbg)
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "C_Cpp.errorSquiggles": "disabled",
+    "clangd.enable": True,
+    "files.watcherExclude": {
+        "**/Intermediate/**": True,
+        "**/Binaries/**": True,
+        "**/DerivedDataCache/**": True,
+        "**/Saved/**": True,
+        "**/.cache/**": True,
+    },
+    "search.exclude": {
+        "**/Intermediate": True,
+        "**/DerivedDataCache": True,
+        "**/Saved": True,
+        "**/.cache": True,
+    },
+}
+
+GITIGNORE_ENTRIES = ["compile_commands.json", ".cache/"]
+
+
+def main():
+    project = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
+    uprojects = list(project.glob("*.uproject"))
+    if not uprojects:
+        sys.exit(f"Nessun .uproject in {project}")
+    name = uprojects[0].stem
+
+    # compile_commands.json -> database generato da UE per VS Code
+    db = project / ".vscode" / f"compileCommands_{name}.json"
+    if not db.exists():
+        sys.exit(f"{db} non trovato: genera prima i project file per VS Code "
+                 "(Editor > Tools > Refresh Visual Studio Code Project)")
+    link = project / "compile_commands.json"
+    if link.is_symlink() or link.exists():
+        link.unlink()
+    link.symlink_to(db.relative_to(project))
+    print(f"compile_commands.json -> {db.relative_to(project)}")
+
+    # impostazioni nel .code-workspace
+    ws_path = project / f"{name}.code-workspace"
+    if ws_path.exists():
+        ws = json.loads(ws_path.read_text())
+        ws.setdefault("settings", {}).update(WORKSPACE_SETTINGS)
+        recs = ws.setdefault("extensions", {}).setdefault("recommendations", [])
+        if CLANGD_EXT not in recs:
+            recs.append(CLANGD_EXT)
+        ws_path.write_text(json.dumps(ws, indent="\t") + "\n")
+        print(f"Aggiornato {ws_path.name}")
+    else:
+        print(f"Attenzione: {ws_path.name} non trovato")
+
+    # stesse impostazioni in .vscode/settings.json: valgono anche aprendo la
+    # cartella invece del .code-workspace
+    folder_settings = project / ".vscode" / "settings.json"
+    fs = json.loads(folder_settings.read_text()) if folder_settings.exists() else {}
+    fs.update(WORKSPACE_SETTINGS)
+    folder_settings.write_text(json.dumps(fs, indent=4) + "\n")
+    print("Aggiornato .vscode/settings.json")
+
+    # .gitignore
+    gi = project / ".gitignore"
+    lines = gi.read_text().splitlines() if gi.exists() else []
+    missing = [e for e in GITIGNORE_ENTRIES if e not in lines]
+    if missing:
+        with gi.open("a") as f:
+            f.write("\n# clangd\n" + "\n".join(missing) + "\n")
+        print(f"Aggiunto a .gitignore: {', '.join(missing)}")
+
+    print("Fatto. Riapri il workspace in VS Code (o 'clangd: Restart language server').")
+
+
+if __name__ == "__main__":
+    main()

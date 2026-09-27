@@ -1,0 +1,7 @@
+# Config globale clangd (usato solo nei progetti Unreal)
+CompileFlags:
+  # il compile database generato da UE per VS Code omette lo standard C++
+  Add: [-std=c++20]
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
