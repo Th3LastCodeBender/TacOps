@@ -1,6 +1,9 @@
-/Intermediate
-/Saved
 /.vscode
-/DerivedDataCache
+/.cache
+/Intermediate
+/Tools
 /.git
 /Content
+/Intel
+/Saved
+/DerivedDataCache
