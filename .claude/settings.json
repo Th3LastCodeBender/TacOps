@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./Intermediate/**)",
+      "Read(./Binaries/**)",
+      "Read(./Saved/**)",
+      "Read(./DerivedDataCache/**)",
+      "Read(./.cache/**)",
+      "Read(./compile_commands.json)",
+      "Read(//home/magico/UE5/Linux_Unreal_Engine_5.8.0/Engine/Intermediate/**)",
+      "Read(//home/magico/UE5/Linux_Unreal_Engine_5.8.0/Engine/Binaries/**)",
+      "Read(//home/magico/UE5/Linux_Unreal_Engine_5.8.0/Engine/DerivedDataCache/**)",
+      "Read(./Content/**)",
+      "Read(//home/magico/UE5/Linux_Unreal_Engine_5.8.0/Engine/Source/ThirdParty/**)"
+    ]
+  },
+  "enabledPlugins": {
+    "typesafe@typesafe-ai": false,
+    "ui-ux-pro-max@ui-ux-pro-max-skill": false
+  }
+}
